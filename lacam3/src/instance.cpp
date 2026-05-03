@@ -1,3 +1,13 @@
+// NOTE: this file was modified from the original lacam3 repo
+// (https://github.com/Kei18/lacam3, commit 1a269b7addc1edc4f1f56b194d307190f5491943 2025-03-09)
+// Changes from original:
+//   1. Instance constructor (scen file loading): replaced movingai-format regex
+//      (\d+\t.+\.map\t\d+\t\d+\t(x_s)\t(y_s)\t(x_g)\t(y_g)\t.+) with a compact
+//      format regex (agent_id\tstart_index\tgoal_index). The new format uses flat
+//      vertex indices instead of (x,y) coordinates, and a single-line header
+//      (map_name N seed timestep) that is skipped automatically as a non-match.
+//   2. No other constructors were modified.
+
 #include "../include/instance.hpp"
 
 Instance::~Instance()
@@ -24,9 +34,51 @@ Instance::Instance(const std::string &map_filename,
   for (auto k : goal_indexes) goals.push_back(G->U[k]);
 }
 
-// for load instance
-static const std::regex r_instance =
-    std::regex(R"(\d+\t.+\.map\t\d+\t\d+\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t.+)");
+// // for load instance
+// static const std::regex r_instance =
+//     std::regex(R"(\d+\t.+\.map\t\d+\t\d+\t(\d+)\t(\d+)\t(\d+)\t(\d+)\t.+)");
+
+// Instance::Instance(const std::string &scen_filename,
+//                    const std::string &map_filename, const int _N)
+//     : G(new Graph(map_filename)),
+//       starts(Config()),
+//       goals(Config()),
+//       N(_N),
+//       delete_graph_after_used(true)
+// {
+//   // load start-goal pairs
+//   std::ifstream file(scen_filename);
+//   if (!file) {
+//     info(0, 0, scen_filename, " is not found");
+//     return;
+//   }
+//   std::string line;
+//   std::smatch results;
+
+//   while (getline(file, line)) {
+//     // for CRLF coding
+//     if (*(line.end() - 1) == 0x0d) line.pop_back();
+
+//     if (std::regex_match(line, results, r_instance)) {
+//       auto x_s = std::stoi(results[1].str());
+//       auto y_s = std::stoi(results[2].str());
+//       auto x_g = std::stoi(results[3].str());
+//       auto y_g = std::stoi(results[4].str());
+//       if (x_s < 0 || G->width <= x_s || x_g < 0 || G->width <= x_g) continue;
+//       if (y_s < 0 || G->height <= y_s || y_g < 0 || G->height <= y_g) continue;
+//       auto s = G->U[G->width * y_s + x_s];
+//       auto g = G->U[G->width * y_g + x_g];
+//       if (s == nullptr || g == nullptr) continue;
+//       starts.push_back(s);
+//       goals.push_back(g);
+//     }
+
+//     if (starts.size() == N) break;
+//   }
+// }
+
+
+static const std::regex r_instance = std::regex(R"((\d+)\s+(\d+)\s+(\d+))");
 
 Instance::Instance(const std::string &scen_filename,
                    const std::string &map_filename, const int _N)
@@ -36,7 +88,6 @@ Instance::Instance(const std::string &scen_filename,
       N(_N),
       delete_graph_after_used(true)
 {
-  // load start-goal pairs
   std::ifstream file(scen_filename);
   if (!file) {
     info(0, 0, scen_filename, " is not found");
@@ -46,26 +97,24 @@ Instance::Instance(const std::string &scen_filename,
   std::smatch results;
 
   while (getline(file, line)) {
-    // for CRLF coding
     if (*(line.end() - 1) == 0x0d) line.pop_back();
 
     if (std::regex_match(line, results, r_instance)) {
-      auto x_s = std::stoi(results[1].str());
-      auto y_s = std::stoi(results[2].str());
-      auto x_g = std::stoi(results[3].str());
-      auto y_g = std::stoi(results[4].str());
-      if (x_s < 0 || G->width <= x_s || x_g < 0 || G->width <= x_g) continue;
-      if (y_s < 0 || G->height <= y_s || y_g < 0 || G->height <= y_g) continue;
-      auto s = G->U[G->width * y_s + x_s];
-      auto g = G->U[G->width * y_g + x_g];
+      auto start_index = std::stoi(results[2].str());
+      auto goal_index  = std::stoi(results[3].str());
+      if (start_index < 0 || start_index >= G->width * G->height) continue;
+      if (goal_index  < 0 || goal_index  >= G->width * G->height) continue;
+      auto s = G->U[start_index];
+      auto g = G->U[goal_index];
       if (s == nullptr || g == nullptr) continue;
       starts.push_back(s);
       goals.push_back(g);
     }
 
-    if (starts.size() == N) break;
+    if ((int)starts.size() == N) break;
   }
 }
+
 
 Instance::Instance(const std::string &map_filename, const int _N,
                    const int seed)

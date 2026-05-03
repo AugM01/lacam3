@@ -148,6 +148,7 @@ int main(int argc, char *argv[])
 
   // post processing
   print_stats(verbose, &deadline, ins, solution, comp_time_ms);
-  make_log(ins, solution, output_name, comp_time_ms, map_name, seed, log_short);
+  make_log(ins, flg_no_all, solution, output_name, comp_time_ms, map_name, seed, log_short);
+  compress_file_zstd(output_name, 6, true);
   return 0;
 }
