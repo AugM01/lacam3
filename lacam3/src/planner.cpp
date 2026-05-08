@@ -58,6 +58,21 @@ Planner::~Planner()
   if (delete_dist_table_after_used) delete D;
 }
 
+int Planner::compute_sum_of_costs(const Solution &solution)
+{
+  if (solution.empty()) return -1;
+  auto cost = 0;
+  for (uint i = 0; i < N; ++i) {
+    for (int t = (int)solution.size() - 1; t >= 0; --t) {
+      if (solution[t][i] != ins->goals[i]) {
+        cost += t + 1;
+        break;
+      }
+    }
+  }
+  return cost;
+}
+
 Solution Planner::solve()
 {
   info(1, verbose, deadline, "start search");
@@ -80,9 +95,13 @@ Solution Planner::solve()
       if ((proc).wait_for(TIME_ZERO) != std::future_status::ready) return false;
       apply_new_solution(proc.get());
       ++seed_refiner;
+      auto plan = backtrack(H_goal);
+      if (H_goal != nullptr) {
+        info(1, verbose, deadline, "cost update -> SoL: ", H_goal->g,
+            " SoC:", compute_sum_of_costs(plan));
+      }
       refiner_pool.emplace_back(std::async(std::launch::async,
-                                           &Planner::get_refined_plan, this,
-                                           backtrack(H_goal)));
+                                          &Planner::get_refined_plan, this, plan));
       return true;
     });
 
@@ -260,8 +279,8 @@ void Planner::rewrite(HNode *H_from, HNode *H_to)
     for (auto n_to : n_from->neighbor) {
       auto g_val = n_from->g + get_edge_cost(n_from->C, n_to->C);
       if (g_val < n_to->g) {
-        if (n_to == H_goal)
-          info(2, verbose, deadline, "cost update: ", H_goal->g, " -> ", g_val);
+        // if (n_to == H_goal)
+        //   info(2, verbose, deadline, "cost update: ", H_goal->g, " -> ", g_val);
         n_to->g = g_val;
         n_to->f = n_to->g + n_to->h;
         n_to->parent = n_from;

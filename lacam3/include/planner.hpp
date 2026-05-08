@@ -106,4 +106,5 @@ struct Planner {
   Solution get_refined_plan(const Solution &plan_origin);
   void update_checkpoints();
   void logging();
+  int compute_sum_of_costs(const Solution &solution);
 };
