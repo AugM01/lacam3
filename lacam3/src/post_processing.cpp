@@ -233,16 +233,24 @@ void make_log(const Instance &ins, const bool flg_no_all, const Solution &soluti
     if (i != ins.N - 1) log << ",";
   }
   log << "\nsolution=\n";
+    for (size_t i=0; i < ins.N; ++i) {
+      log << "  Agent " << i << ": [";
   for (size_t t = 0; t < solution.size(); ++t) {
-    log << t << ": [";
-    auto C = solution[t];
-    for (auto v : C) {
-      // log << "(" << get_x(v->index) << "," << get_y(v->index) << "),";
-      log << v->index;
-      if (v != C.back()) log << ", ";
+        log << solution[t][i]->index;
+        if (t != solution.size() - 1) log << ",";
     }
     log << "]\n";
   }
+    // for (size_t t = 0; t < solution.size(); ++t) {
+    //   log << t << ": [";
+    //   auto C = solution[t];
+    //   for (auto v : C) {
+    //     // log << "(" << get_x(v->index) << "," << get_y(v->index) << "),";
+    //     log << v->index;
+    //     if (v != C.back()) log << ", ";
+    //   }
+    //   log << "]\n";
+    // }
 
   log.close();
 
